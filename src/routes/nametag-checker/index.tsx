@@ -3,9 +3,6 @@ import { createFileRoute, Link } from '@tanstack/solid-router'
 import { createEffect, createResource, createSignal, Match, Show, Suspense, Switch } from 'solid-js'
 import Papa from 'papaparse';
 import { makePersisted, storageSync } from '@solid-primitives/storage';
-import { ExternalBarcodeReaderMode } from '@/components/NametagChecker/Views/ExternalBarcodeReaderMode';
-import { ResultsDisplayMode } from '@/components/NametagChecker/Views/ResultsDisplayMode';
-import { CameraReaderMode } from '@/components/NametagChecker/Views/CameraReaderMode';
 import { LOCALSTORAGE_PARTICIPANTS, LOCALSTORAGE_SCANS, LOCALSTORAGE_REJECTS } from '@/settings';
 
 
@@ -118,19 +115,19 @@ function NametagCheckerPage() {
 
           <Switch>
             <Match when={participantsList().length === 0}>
-              <div class="pt-4 flex flex-col items-center">
+              <div class="pt-4 flex flex-col items-center gap-3">
                 <p>参加者CSVをアップロードしてください。</p>
                 <input type="file" class="file-input" accept=".csv, text/csv" on:change={(e) => handleFileSelect(e.target.files)} />
               </div>
             </Match>
             <Match when={participantsList().length > 0}>
-              <div class="flex flex-col items-center pt-4 gap-3">
+              <div class="flex flex-col items-stretch pt-4 gap-3">
                 <p>現在{participantsList().length}人分のデータが読み込まれてます。</p>
                 <Link to={"/nametag-checker/scan-camera" as never} class="btn btn-primary">スマホのカメラで確認を開始</Link>
                 <Link to={"/nametag-checker/scan-external" as never} class="btn btn-secondary">外付けバーコードリーダーで確認を開始</Link>
                 <div class="pt-3" />
                 <Link class="btn btn-outline btn-success" to={"/nametag-checker/results" as never}>結果確認</Link>
-                <button class="btn btn-outline btn-warning" onClick={() => confirmResetProgressModal!.showModal()}>現在の進捗をリセット</button>
+                <button class="btn btn-outline btn-warning" onClick={() => confirmResetProgressModal!.showModal()}>進行状況をリセット</button>
                 <button class="btn btn-outline btn-error" onClick={() => confirmDeleteModal!.showModal()}>保存データを全削除</button>
               </div>
             </Match>
@@ -164,7 +161,7 @@ function NametagCheckerPage() {
           <form method="dialog">
             <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
           </form>
-          <h3 class="text-lg font-bold">現在の進捗をリセット</h3>
+          <h3 class="text-lg font-bold">現在の進行状況をリセット</h3>
           <p class="py-4">現在スキャンしたバーコードのリストをリセットします。</p>
           <p class="py-4">アップロードされた参加者CSVのデータはそのまま保管されます。</p>
           <div class="modal-action">

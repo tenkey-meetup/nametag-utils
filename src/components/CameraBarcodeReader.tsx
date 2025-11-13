@@ -1,4 +1,4 @@
-import { createEffect, createMemo, createResource, createSignal, For, onCleanup, Show, type Component } from "solid-js"
+import { createEffect, createMemo, createResource, createSignal, For, onCleanup, onMount, Show, type Component } from "solid-js"
 import { BarcodeDetectorPolyfill as BarcodeDetector } from '@undecaf/barcode-detector-polyfill'
 import { createCameras } from '@solid-primitives/devices'
 import { createPermission } from '@solid-primitives/permission'
@@ -7,7 +7,7 @@ import beepSound from '@/assets/Beep-Trimmed.wav'
 
 
 export const CameraBarcodeReader: Component<{
-  activate: boolean,
+  activate: boolean, // When true, barcodes will be read and onScan will be fired if detected
   onScan: (id: string) => void
 }> = (props) => {
 
@@ -16,7 +16,7 @@ export const CameraBarcodeReader: Component<{
   const [camera, setCamera] = createSignal<MediaDeviceInfo | undefined>(undefined)
   const barcodeReader = new BarcodeDetector({ formats: ['code_128'] })
   const sound = new Audio(beepSound)
-
+  let cameraVideoRef!: HTMLVideoElement
 
 
   // Request permission for cameras and get devices list
@@ -40,7 +40,8 @@ export const CameraBarcodeReader: Component<{
     }
   }
 
-  // On cameras list change, assign the most promising one
+
+  // On cameras list change, assign the most promising one as the primary
   createEffect(() => {
     if (cameras()) {
       // Look for "facing back"
@@ -48,15 +49,14 @@ export const CameraBarcodeReader: Component<{
     }
   })
 
-  // Query cameras on load
-  createEffect(() => {
+
+  // Fire off the permission-requesting and camera load chain on component mount
+  onMount(() => {
     queryCameras()
   })
 
-  let cameraVideoRef!: HTMLVideoElement
 
-
-  // On camera change, set video stream
+  // On primary camera change, set video stream
   createEffect(() => {
     console.log(camera())
     if (!camera() || !cameraVideoRef) { return }
@@ -91,16 +91,27 @@ export const CameraBarcodeReader: Component<{
       barcodeReader.detect(cameraVideoRef)
       .then(output => {
         if (props.activate && output.length > 0) {
+          // Run onScan for all found barcodes
           output.forEach(code => {
             props.onScan(code.rawValue)
           })
-          
+          // Give feedback to the user
+          navigator.vibrate?.(20)
           sound.play()
         }
       })
     }
   }, 100)
-  onCleanup(() => clearInterval(scanTimer));
+
+
+  // Cleanup function
+  onCleanup(() => {
+    clearInterval(scanTimer)
+    if (cameraVideoRef && cameraVideoRef.srcObject) {
+      (cameraVideoRef.srcObject as MediaStream).getTracks().forEach(track => track.stop())
+      cameraVideoRef.srcObject = null
+    }
+  });
   
 
   return (
