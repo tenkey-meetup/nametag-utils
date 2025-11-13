@@ -1,0 +1,2 @@
+The beep audio sample is the following file with the silent bits trimmed.
+https://freesound.org/people/kalisemorrison/sounds/202530/
