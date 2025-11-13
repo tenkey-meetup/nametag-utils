@@ -35,8 +35,13 @@ export const CameraBarcodeReader: Component<{
           const videoDevices = (await navigator.mediaDevices.enumerateDevices()).filter(device => device.kind === "videoinput")
           setCameras(videoDevices)
         })
-    } catch (err) {
-      setCameraError(JSON.stringify(err))
+    } catch (error) {
+      console.error(error)
+      if (error instanceof Error) {
+        setCameraError(error.toString())
+      } else {
+        setCameraError(JSON.stringify(error))
+      }
     }
   }
 
@@ -46,6 +51,7 @@ export const CameraBarcodeReader: Component<{
     if (cameras()) {
       // Look for "facing back"
       setCamera(() => cameras()!.find(dev => dev.label.includes("back")) || cameras()![0])
+      setCameraError(null)
     }
   })
 
@@ -78,7 +84,8 @@ export const CameraBarcodeReader: Component<{
       }
     })
     .catch((error: Error) => {
-      setCameraError(error.message)
+      console.error(error)
+      setCameraError(error.toString())
     })
   })
 
@@ -140,10 +147,10 @@ export const CameraBarcodeReader: Component<{
       </Show>
 
       <Show when={!camera()}>
-        <button class="btn btn-primary" onClick={() => { queryCameras() }}>カメラアクセスを許可する</button>
+        <button class="btn btn-primary mt-4" onClick={() => { queryCameras() }}>カメラアクセスを許可する</button>
       </Show>
       <Show when={cameraError()}>
-        <p>エラ：{cameraError()}</p>
+        <p class="mt-4 text-red-500">エラー：{cameraError()}</p>
       </Show>
 
     </div>

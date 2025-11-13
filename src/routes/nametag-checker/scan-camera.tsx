@@ -20,12 +20,12 @@ function ScanCameraPage() {
   createResource(() => participantsInit)[0]();
   createResource(() => scanListInit)[0]();
   createResource(() => rejectListInit)[0]();
-  
+
 
   // Quick lookup list for IDs
   const participantIdsList = () => participantsList().map(entry => entry.registrationId)
 
-  // Handle scanning from child views
+  // Handle scanning
   const onScan = (id: string) => {
     if (id === "") { return }
     if (!participantIdsList().includes(id)) {

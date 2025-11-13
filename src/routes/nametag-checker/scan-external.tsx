@@ -26,7 +26,7 @@ function ScanExternalPage() {
   // Quick lookup list for IDs
   const participantIdsList = () => participantsList().map(entry => entry.registrationId)
 
-  // Handle scanning from child views
+  // Handle scanning
   const onScan = (id: string) => {
     if (!participantIdsList().includes(id)) {
       // setRejectList([...rejectList(), id])
