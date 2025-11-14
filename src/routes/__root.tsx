@@ -27,7 +27,7 @@ function RootComponent() {
           <Navbar
             navbarItems={[
               { label: "名札の存在確認", path: "/nametag-checker" },
-              { label: "参加者CSVの比較", path: "/csv-compare" }
+              // { label: "参加者CSVの比較", path: "/csv-compare" }
             ]}
           />
         </div>

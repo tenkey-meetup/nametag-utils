@@ -1,6 +1,6 @@
 import { type Participant } from '@/typedefs/CsvTypes'
-import { createFileRoute, Link } from '@tanstack/solid-router'
-import { createResource, createSignal, For, Match, Switch } from 'solid-js'
+import { createFileRoute, Link, useNavigate } from '@tanstack/solid-router'
+import { createEffect, createResource, createSignal, For, Match, Switch } from 'solid-js'
 import { makePersisted, storageSync } from '@solid-primitives/storage';
 import { LOCALSTORAGE_PARTICIPANTS, LOCALSTORAGE_SCANS, LOCALSTORAGE_REJECTS } from '@/settings';
 import { ParticipantCard } from '@/components/ParticipantCard';
@@ -14,7 +14,6 @@ export const Route = createFileRoute('/nametag-checker/results')({
 // Main page
 function ResultsPage() {
 
-
   const [participantsList, setParticipantsList, participantsInit] = makePersisted(createSignal<Participant[]>([]), { name: LOCALSTORAGE_PARTICIPANTS, storage: localStorage, sync: storageSync });
   const [scanList, setScanList, scanListInit] = makePersisted(createSignal<string[]>([]), { name: LOCALSTORAGE_SCANS, storage: localStorage, sync: storageSync });
   const [rejectList, setRejectList, rejectListInit] = makePersisted(createSignal<string[]>([]), { name: LOCALSTORAGE_REJECTS, storage: localStorage, sync: storageSync });
@@ -22,11 +21,20 @@ function ResultsPage() {
   createResource(() => scanListInit)[0]();
   createResource(() => rejectListInit)[0]();
 
-
   const unscannedParticipants = () => participantsList().filter(entry => !scanList().includes(entry.registrationId))
   const unscannedAttendingParticipants = () => unscannedParticipants().filter(entry => entry.connpassAttending)
   const unscannedCancelledParticipants = () => unscannedParticipants().filter(entry => !entry.connpassAttending)
   const scannedParticipants = () => participantsList().filter(entry => scanList().includes(entry.registrationId))
+
+  const navigate = useNavigate()
+
+  // Prevent navigating in if participantsList is empty
+  createEffect(() => {
+    if (participantsList().length === 0) {
+      navigate({ to: '/nametag-checker' })
+    }
+  })
+
 
   return (
     <div class="container mx-auto flex flex-col items-center pt-4 gap-4 lg:gap-8 px-3 lg:px-0">

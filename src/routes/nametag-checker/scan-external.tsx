@@ -1,10 +1,11 @@
 import { type Participant } from '@/typedefs/CsvTypes'
-import { createFileRoute, Link } from '@tanstack/solid-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/solid-router'
 import { createEffect, createResource, createSignal, For, Show } from 'solid-js'
 import { makePersisted, storageSync } from '@solid-primitives/storage';
 import { LOCALSTORAGE_PARTICIPANTS, LOCALSTORAGE_SCANS, LOCALSTORAGE_REJECTS, CHECKER_DISPLAY_MOST_RECENT } from '@/settings';
 import { ExternalBarcodeReaderInput } from '@/components/ExternalBarcodeReaderInput';
 import { ParticipantCard } from '@/components/ParticipantCard';
+import { GenericBlankCard } from '@/components/GenericBlankCard';
 
 
 export const Route = createFileRoute('/nametag-checker/scan-external')({
@@ -23,6 +24,19 @@ function ScanExternalPage() {
   createResource(() => scanListInit)[0]();
   createResource(() => rejectListInit)[0]();
 
+  const mostRecentScans = () => scanList().slice(0, CHECKER_DISPLAY_MOST_RECENT)
+  const mostRecentRejects = () => rejectList().slice(0, CHECKER_DISPLAY_MOST_RECENT)
+  const mostRecentScansDetails: () => Participant[] = () => mostRecentScans().map(id => participantsList().find(entry => entry.registrationId === id)!)
+  
+  const navigate = useNavigate()
+  
+  // Prevent navigating in if participantsList is empty
+  createEffect(() => {
+    if (participantsList().length === 0) {
+      navigate({to: '/nametag-checker'})
+    }
+  })
+
   // Quick lookup list for IDs
   const participantIdsList = () => participantsList().map(entry => entry.registrationId)
 
@@ -36,24 +50,19 @@ function ScanExternalPage() {
     }
   }
 
-
-  const mostRecentScans = () => scanList().slice(0, CHECKER_DISPLAY_MOST_RECENT)
-  const mostRecentRejects = () => rejectList().slice(0, CHECKER_DISPLAY_MOST_RECENT)
-
-  const mostRecentScansDetails: () => Participant[] = () => mostRecentScans().map(id => participantsList().find(entry => entry.registrationId === id)!)
-
   return (
     <div class="container mx-auto flex flex-col items-center pt-4 gap-4">
       <h1 class="text-3xl">名札の存在確認</h1>
 
       <ExternalBarcodeReaderInput
-        onInput={(t) => onScan(t)}
+        onInput={onScan}
       />
 
       <Link class="btn btn-primary" to={"/nametag-checker/results" as never}>進行確認</Link>
 
       <Show when={mostRecentScans().length > 0}>
-        <p>最近スキャンされたID</p>
+        
+        <p class="mt-8 text-lg">最近スキャンされたID</p>
         <div class="flex flex-col gap-2 p-4 items-stretch w-full max-w-[500px]">
           <For each={mostRecentScansDetails()}>
             {(entry) =>
@@ -63,6 +72,22 @@ function ScanExternalPage() {
         </div>
         <Show when={scanList().length > CHECKER_DISPLAY_MOST_RECENT}>
           <p>+その他{scanList().length - CHECKER_DISPLAY_MOST_RECENT}名</p>
+        </Show>
+      </Show>
+
+      <Show when={mostRecentScans().length > 0}>
+        <p class="mt-8 text-lg">スキャンされた参加者リストに存在しないID</p>
+        <div class="flex flex-col gap-2 p-4 items-stretch w-full max-w-[500px]">
+          <For each={mostRecentRejects()}>
+            {(entry) =>
+              <GenericBlankCard>
+                <h2 class="font-semibold text-xl text-red-700">{entry}</h2>
+              </GenericBlankCard>
+            }
+          </For>
+        </div>
+        <Show when={rejectList().length > CHECKER_DISPLAY_MOST_RECENT}>
+          <p>+その他{rejectList().length - CHECKER_DISPLAY_MOST_RECENT}名</p>
         </Show>
       </Show>
     </div>

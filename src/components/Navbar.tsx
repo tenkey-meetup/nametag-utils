@@ -1,11 +1,10 @@
+import { Link } from "@tanstack/solid-router";
 import { children, For, type ParentComponent } from "solid-js";
 
 
 export const Navbar: ParentComponent<{
   navbarItems: {label: string, path: string}[]
 }> = (props) => {
-
-  const c = children(() => props.children);
 
   return (
     <div class="drawer">
@@ -30,7 +29,7 @@ export const Navbar: ParentComponent<{
               </svg>
             </label>
           </div>
-          <div class="mx-2 flex-1 px-2">天キー　ツールキット</div>
+          <div class="mx-2 flex-1 px-2"><Link to={"/"}>天キー　ツールキット</Link></div>
           <div class="hidden flex-none lg:block">
             <ul class="menu menu-horizontal">
               {/* Navbar items - Desktop*/}
@@ -42,8 +41,8 @@ export const Navbar: ParentComponent<{
             </ul>
           </div>
         </div>
-        {/* Content */}
-        {c()}
+        {/* Content if specified */}
+        {props.children}
       </div>
       <div class="drawer-side">
         <label for="my-drawer-2" aria-label="close sidebar" class="drawer-overlay"></label>

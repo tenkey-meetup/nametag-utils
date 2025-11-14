@@ -1,6 +1,5 @@
-import { createFileRoute } from '@tanstack/solid-router'
-
-import logo from '../logo.svg'
+import { createFileRoute, Link } from '@tanstack/solid-router'
+import { TenkeyLogo } from '@/components/TenkeyLogo'
 
 export const Route = createFileRoute('/')({
   component: IndexComponent,
@@ -9,31 +8,13 @@ export const Route = createFileRoute('/')({
 function IndexComponent() {
   return (
     <div class="text-center">
-      <header class="min-h-screen flex flex-col items-center justify-center bg-[#282c34] text-white text-[calc(10px+2vmin)]">
-        <img
-          src={logo}
-          class="h-[40vmin] pointer-events-none animate-[spin_20s_linear_infinite]"
-          alt="logo"
-        />
-        <p>
-          Edit <code>src/routes/index.tsx</code> and save to reload.
-        </p>
-        <a
-          class="text-[#61dafb] hover:underline"
-          href="https://solidjs.com"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn Solid
-        </a>
-        <a
-          class="text-[#61dafb] hover:underline"
-          href="https://tanstack.com"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn TanStack
-        </a>
+      <header class="min-h-screen flex flex-col items-center justify-center bg-gray-800 text-white text-[calc(10px+2vmin)]">
+        <div class="flex flex-col items-center gap-12">
+          <TenkeyLogo classes='w-[75dvw] md:w-[50dvw] lg:w-[25dvw]' />
+          <div class="flex flex-row gap-4">
+            <Link class="btn btn-primary" to={"/nametag-checker"}>名札の存在確認</Link>
+          </div>
+        </div>
       </header>
     </div>
   )

@@ -1,10 +1,11 @@
 import { type Participant } from '@/typedefs/CsvTypes'
-import { createFileRoute, Link } from '@tanstack/solid-router'
-import { createResource, createSignal, For, onMount, Show } from 'solid-js'
+import { createFileRoute, Link, useNavigate } from '@tanstack/solid-router'
+import { createEffect, createResource, createSignal, For, onMount, Show } from 'solid-js'
 import { makePersisted, storageSync } from '@solid-primitives/storage';
 import { LOCALSTORAGE_PARTICIPANTS, LOCALSTORAGE_SCANS, LOCALSTORAGE_REJECTS, CHECKER_DISPLAY_MOST_RECENT } from '@/settings';
 import { CameraBarcodeReader } from '@/components/CameraBarcodeReader';
 import { ParticipantCard } from '@/components/ParticipantCard';
+import { GenericBlankCard } from '@/components/GenericBlankCard';
 
 
 export const Route = createFileRoute('/nametag-checker/scan-camera')({
@@ -21,12 +22,26 @@ function ScanCameraPage() {
   createResource(() => scanListInit)[0]();
   createResource(() => rejectListInit)[0]();
 
+  const mostRecentScans = () => scanList().slice(0, CHECKER_DISPLAY_MOST_RECENT)
+  const mostRecentRejects = () => rejectList().slice(0, CHECKER_DISPLAY_MOST_RECENT)
+  const [barcodeScannerActive, setBarcodeScannerActive] = createSignal<boolean>(false)
+  const mostRecentScansDetails: () => Participant[] = () => mostRecentScans().map(id => participantsList().find(entry => entry.registrationId === id)!)
+
+  const navigate = useNavigate()
+
+  // Prevent navigating in if participantsList is empty
+  createEffect(() => {
+    if (participantsList().length === 0) {
+      navigate({ to: '/nametag-checker' })
+    }
+  })
 
   // Quick lookup list for IDs
   const participantIdsList = () => participantsList().map(entry => entry.registrationId)
 
   // Handle scanning
   const onScan = (id: string) => {
+    setBarcodeScannerActive(false)
     if (id === "") { return }
     if (!participantIdsList().includes(id)) {
       // setRejectList([...rejectList(), id])
@@ -36,74 +51,77 @@ function ScanCameraPage() {
     }
   }
 
-
-    const mostRecentScans = () => scanList().slice(0, CHECKER_DISPLAY_MOST_RECENT)
-    const mostRecentRejects = () => rejectList().slice(0, CHECKER_DISPLAY_MOST_RECENT)
-    const [barcodeScannerActive, setBarcodeScannerActive] = createSignal<boolean>(false)
-  
-    const mostRecentScansDetails: () => Participant[] = () => mostRecentScans().map(id => participantsList().find(entry => entry.registrationId === id)!)
-  
-    const onBarcodeReaderOutput = (id: string) => {
-      console.log(id)
+  // Explicitly define touch inputs on scan button as non-passive to prevent haptic feedback on longpress
+  let scanButton!: HTMLButtonElement;
+  onMount(() => {
+    scanButton.addEventListener("contextmenu", (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+    }, { passive: false })
+    scanButton.addEventListener("touchstart", (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      setBarcodeScannerActive(true)
+    }, { passive: false })
+    scanButton.addEventListener("touchend", (e) => {
+      e.preventDefault()
+      e.stopPropagation()
       setBarcodeScannerActive(false)
-      onScan(id)
-    }
-  
-    // Explicitly define touch inputs on scan button as non-passive to prevent haptic feedback on longpress
-    let scanButton!: HTMLButtonElement;
-    onMount(() => {
-      scanButton.addEventListener("contextmenu", (e) => {
-        e.preventDefault()
-        e.stopPropagation()
-      }, { passive: false })
-      scanButton.addEventListener("touchstart", (e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        setBarcodeScannerActive(true)
-      }, { passive: false })
-      scanButton.addEventListener("touchend", (e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        setBarcodeScannerActive(false)
-      }, { passive: false })
-    })
-  
-  
-  
-    return (
-      <div class="relative w-full h-full flex-grow">
-        <div class="absolute top-0 left-0 right-0 bottom-0 w-full h-full container mx-auto flex flex-col items-center pt-0 md:pt-4 gap-4">
-  
-          <CameraBarcodeReader
-            activate={barcodeScannerActive()}
-            onScan={onBarcodeReaderOutput}
-          />
-  
-          <Show when={mostRecentScans().length > 0}>
-            <p>最近スキャンされたID</p>
-            <div class="flex flex-col gap-2 p-4 items-stretch w-full max-w-[500px]">
-              <For each={mostRecentScansDetails()}>
-                {(entry) =>
-                  <ParticipantCard participant={entry} />
-                }
-              </For>
-            </div>
-            <Show when={scanList().length > CHECKER_DISPLAY_MOST_RECENT}>
-              <p>+その他{scanList().length - CHECKER_DISPLAY_MOST_RECENT}名</p>
-            </Show>
+    }, { passive: false })
+  })
+
+
+  return (
+    <>
+      <div class="w-full h-full container mx-auto flex flex-col items-center pt-0 md:pt-4 gap-4 pb-10">
+
+        <CameraBarcodeReader
+          activate={barcodeScannerActive()}
+          onScan={onScan}
+        />
+
+        <Show when={mostRecentScans().length > 0}>
+
+          <p class="mt-8 text-lg">最近スキャンされたID</p>
+          <div class="flex flex-col gap-2 p-4 items-stretch w-full max-w-[500px]">
+            <For each={mostRecentScansDetails()}>
+              {(entry) =>
+                <ParticipantCard participant={entry} />
+              }
+            </For>
+          </div>
+          <Show when={scanList().length > CHECKER_DISPLAY_MOST_RECENT}>
+            <p>+その他{scanList().length - CHECKER_DISPLAY_MOST_RECENT}名</p>
           </Show>
-        </div>
-  
-        <div class="absolute bottom-0 w-full flex flex-row items-center justify-center pb-2 gap-2 md:pb-4 md:gap-4">
-          <Link class="btn btn-outline btn-accent btn-xl" to={"/nametag-checker/results"}>進行確認</Link>
-          <button class={`btn btn-xl select-none ${barcodeScannerActive() ? "btn-secondary" : "btn-primary"}`}
-            ref={scanButton}
-            onMouseDown={(e) => { e.preventDefault(); setBarcodeScannerActive(true) }}
-            onMouseUp={(e) => { e.preventDefault(); setBarcodeScannerActive(false) }}
-          >
-            スキャン
-          </button>
-        </div>
+        </Show>
+
+        <Show when={mostRecentScans().length > 0}>
+          <p class="mt-8 text-lg">スキャンされた参加者リストに存在しないID</p>
+          <div class="flex flex-col gap-2 p-4 items-stretch w-full max-w-[500px]">
+            <For each={mostRecentRejects()}>
+              {(entry) =>
+                <GenericBlankCard>
+                  <h2 class="font-semibold text-xl text-red-700">{entry}</h2>
+                </GenericBlankCard>
+              }
+            </For>
+          </div>
+          <Show when={rejectList().length > CHECKER_DISPLAY_MOST_RECENT}>
+            <p>+その他{rejectList().length - CHECKER_DISPLAY_MOST_RECENT}名</p>
+          </Show>
+        </Show>
       </div>
-    )
+      <div class="fixed bottom-0 w-full flex flex-row items-center justify-center py-2 gap-2 md:py-4 md:gap-4 bg-white">
+        <Link class="btn btn-outline btn-accent btn-xl" to={"/nametag-checker/results"}>進行確認</Link>
+        <button class={`btn btn-xl select-none ${barcodeScannerActive() ? "btn-secondary" : "btn-primary"}`}
+          ref={scanButton}
+          onMouseDown={(e) => { e.preventDefault(); setBarcodeScannerActive(true) }}
+          onMouseUp={(e) => { e.preventDefault(); setBarcodeScannerActive(false) }}
+        >
+          スキャン
+        </button>
+      </div>
+
+    </>
+  )
 }
